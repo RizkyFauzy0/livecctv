@@ -183,12 +183,6 @@
 
             // Auto-hide controls
             setupControlsAutoHide();
-
-            // Handle fullscreen change
-            document.addEventListener('fullscreenchange', handleFullscreenChange);
-            document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
-            document.addEventListener('mozfullscreenchange', handleFullscreenChange);
-            document.addEventListener('MSFullscreenChange', handleFullscreenChange);
         });
 
         // Load camera information
@@ -359,18 +353,22 @@
                 
                 // Hide controls after 3 seconds of inactivity
                 hideControlsTimeout = setTimeout(() => {
-                    if (isFullscreen) {
+                    // Check if currently in fullscreen mode
+                    const isCurrentlyFullscreen = !!(document.fullscreenElement || 
+                                                      document.webkitFullscreenElement || 
+                                                      document.mozFullScreenElement || 
+                                                      document.msFullscreenElement);
+                    if (isCurrentlyFullscreen) {
                         controls.classList.add('hidden');
                     }
                 }, 3000);
             });
             
             // Always show controls when not in fullscreen
-            document.addEventListener('fullscreenchange', () => {
-                if (!isFullscreen) {
-                    controls.classList.remove('hidden');
-                }
-            });
+            document.addEventListener('fullscreenchange', handleFullscreenChange);
+            document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+            document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+            document.addEventListener('MSFullscreenChange', handleFullscreenChange);
         }
 
         // Cleanup on page unload

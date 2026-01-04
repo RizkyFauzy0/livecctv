@@ -240,9 +240,9 @@ server.listen(PORT, () => {
     console.log(`Admin Panel: http://localhost:${PORT}`);
 });
 
-// Graceful shutdown
-process.on('SIGTERM', () => {
-    console.log('SIGTERM received, shutting down gracefully...');
+// Graceful shutdown handler
+function gracefulShutdown(signal) {
+    console.log(`${signal} received, shutting down gracefully...`);
     
     // Stop all streams
     ffmpegProcesses.forEach((ffmpeg, cameraId) => {
@@ -259,24 +259,8 @@ process.on('SIGTERM', () => {
         console.log('HTTP server closed');
         process.exit(0);
     });
-});
+}
 
-process.on('SIGINT', () => {
-    console.log('SIGINT received, shutting down gracefully...');
-    
-    // Stop all streams
-    ffmpegProcesses.forEach((ffmpeg, cameraId) => {
-        stopStream(cameraId);
-    });
-    
-    // Close WebSocket server
-    wss.close(() => {
-        console.log('WebSocket server closed');
-    });
-    
-    // Close HTTP server
-    server.close(() => {
-        console.log('HTTP server closed');
-        process.exit(0);
-    });
-});
+// Register shutdown handlers
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));

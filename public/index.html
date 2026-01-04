@@ -322,7 +322,8 @@
             const ctx = canvas.getContext('2d');
             const img = new Image();
             
-            const ws = new WebSocket(`ws://${window.location.host}?cameraId=${cameraId}`);
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const ws = new WebSocket(`${protocol}//${window.location.host}?cameraId=${cameraId}`);
             ws.binaryType = 'arraybuffer';
 
             ws.onmessage = (event) => {
