@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Stream - CCTV</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #312e81 100%);
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+        #videoCanvas {
+            width: 100%;
+            height: 100vh;
+            object-fit: contain;
+            display: block;
+            box-shadow: 0 0 100px rgba(139, 92, 246, 0.1);
+        }
+        .controls {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0) 100%);
+            padding: 40px 20px 20px;
+            transition: opacity 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+        .controls.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .status-indicator {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            align-items: center;
+            padding: 12px 24px;
+            background: rgba(30, 41, 59, 0.8);
+            border-radius: 50px;
+            backdrop-filter: blur(20px);
+            z-index: 100;
+            border: 1px solid rgba(139, 92, 246, 0.2);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 10px;
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+            box-shadow: 0 0 10px currentColor;
+        }
+        .status-dot.live {
+            background: #10b981;
+            box-shadow: 0 0 20px #10b981;
+        }
+        .status-dot.connecting {
+            background: #f59e0b;
+            box-shadow: 0 0 20px #f59e0b;
+        }
+        .status-dot.offline {
+            background: #ef4444;
+            box-shadow: 0 0 20px #ef4444;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .5; }
+        }
+        .loading {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-top: 4px solid #fff;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Status Indicator -->
+    <div class="status-indicator">
+        <div id="statusDot" class="status-dot connecting"></div>
+        <span id="statusText" class="text-white text-sm font-semibold">Connecting...</span>
+    </div>
+
+    <!-- Loading State -->
+    <div id="loading" class="loading">
+        <div class="spinner"></div>
+        <p class="text-white text-lg">Loading stream...</p>
+    </div>
+
+    <!-- Video Canvas -->
+    <canvas id="videoCanvas"></canvas>
+
+    <!-- Controls -->
+    <div id="controls" class="controls">
+        <div class="flex items-center justify-between max-w-6xl mx-auto">
+            <div class="flex items-center space-x-4">
+                <button onclick="toggleFullscreen()" class="bg-gray-800/80 hover:bg-gray-700 backdrop-blur-sm text-white p-3.5 rounded-xl transition-all duration-300 border border-gray-700 hover:border-purple-500 hover:scale-105 shadow-lg">
+                    <svg id="fullscreenIcon" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/>
+                    </svg>
+                </button>
+                <button onclick="window.location.href='/'" class="bg-gray-800/80 backdrop-blur-sm hover:bg-gray-700 text-white px-6 py-3.5 rounded-xl transition-all duration-300 flex items-center space-x-2 border border-gray-700 hover:border-blue-500 hover:scale-105 shadow-lg">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                    </svg>
+                    <span class="font-semibold">Back to Dashboard</span>
+                </button>
+            </div>
+            <div>
+                <h2 id="cameraName" class="text-2xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">Live Stream</h2>
+            </div>
+            <div>
+                <button onclick="reconnect()" class="relative group bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-6 py-3.5 rounded-xl transition-all duration-300 flex items-center space-x-2 shadow-lg hover:shadow-xl hover:scale-105">
+                    <div class="absolute inset-0 bg-gradient-to-r from-blue-400 to-purple-400 rounded-xl blur opacity-0 group-hover:opacity-75 transition-opacity duration-300"></div>
+                    <svg class="w-5 h-5 relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                    </svg>
+                    <span class="font-semibold relative z-10">Reconnect</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Error Message -->
+    <div id="errorMessage" class="fixed inset-0 flex items-center justify-center hidden backdrop-blur-md">
+        <div class="bg-gray-800/90 backdrop-blur-xl border-2 border-red-500/50 rounded-2xl p-8 max-w-md text-center shadow-2xl">
+            <div class="relative inline-block mb-4">
+                <div class="absolute inset-0 bg-red-500 rounded-full blur-xl opacity-50"></div>
+                <svg class="w-16 h-16 text-red-500 relative" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </div>
+            <h3 class="text-2xl font-bold bg-gradient-to-r from-red-400 to-pink-400 bg-clip-text text-transparent mb-3">Connection Failed</h3>
+            <p class="text-gray-300 mb-8">Unable to connect to the camera stream. Please check if the stream is active.</p>
+            <div class="flex space-x-3">
+                <button onclick="reconnect()" class="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold py-3.5 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105">
+                    Retry
+                </button>
+                <button onclick="window.location.href='/'" class="flex-1 bg-gray-700/80 hover:bg-gray-600 text-white font-semibold py-3.5 rounded-xl transition-all duration-300 border border-gray-600">
+                    Go Back
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let ws = null;
+        let canvas = null;
+        let ctx = null;
+        let img = null;
+        let cameraId = null;
+        let isFullscreen = false;
+        let hideControlsTimeout = null;
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            // Get camera ID from URL
+            const pathParts = window.location.pathname.split('/');
+            cameraId = pathParts[pathParts.length - 1];
+
+            if (!cameraId) {
+                showError();
+                return;
+            }
+
+            // Initialize canvas
+            canvas = document.getElementById('videoCanvas');
+            ctx = canvas.getContext('2d');
+            img = new Image();
+
+            // Load camera info
+            loadCameraInfo();
+
+            // Connect to WebSocket
+            connectWebSocket();
+
+            // Auto-hide controls
+            setupControlsAutoHide();
+        });
+
+        // Load camera information
+        async function loadCameraInfo() {
+            try {
+                const response = await fetch('/api/cameras');
+                const cameras = await response.json();
+                const camera = cameras.find(c => c.id === cameraId);
+
+                if (camera) {
+                    document.getElementById('cameraName').textContent = camera.name;
+                    document.title = `${camera.name} - Live Stream`;
+                }
+            } catch (error) {
+                console.error('Error loading camera info:', error);
+            }
+        }
+
+        // Connect to WebSocket
+        function connectWebSocket() {
+            updateStatus('connecting', 'Connecting...');
+            
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            ws = new WebSocket(`${protocol}//${window.location.host}?cameraId=${cameraId}`);
+            ws.binaryType = 'arraybuffer';
+
+            ws.onopen = () => {
+                console.log('WebSocket connected');
+                updateStatus('live', 'LIVE');
+                hideLoading();
+            };
+
+            ws.onmessage = (event) => {
+                const blob = new Blob([event.data], { type: 'image/jpeg' });
+                const url = URL.createObjectURL(blob);
+                
+                img.onload = () => {
+                    // Resize canvas to match image dimensions
+                    if (canvas.width !== img.width || canvas.height !== img.height) {
+                        canvas.width = img.width;
+                        canvas.height = img.height;
+                    }
+                    
+                    ctx.drawImage(img, 0, 0);
+                    URL.revokeObjectURL(url);
+                };
+                img.src = url;
+            };
+
+            ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+                updateStatus('offline', 'Connection Error');
+            };
+
+            ws.onclose = () => {
+                console.log('WebSocket closed');
+                updateStatus('offline', 'Disconnected');
+                
+                // Try to reconnect after 3 seconds
+                setTimeout(() => {
+                    if (ws.readyState === WebSocket.CLOSED) {
+                        console.log('Attempting to reconnect...');
+                        connectWebSocket();
+                    }
+                }, 3000);
+            };
+        }
+
+        // Update status indicator
+        function updateStatus(status, text) {
+            const statusDot = document.getElementById('statusDot');
+            const statusText = document.getElementById('statusText');
+            
+            statusDot.className = `status-dot ${status}`;
+            statusText.textContent = text;
+        }
+
+        // Hide loading state
+        function hideLoading() {
+            document.getElementById('loading').style.display = 'none';
+        }
+
+        // Show error message
+        function showError() {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('errorMessage').classList.remove('hidden');
+            updateStatus('offline', 'Error');
+        }
+
+        // Reconnect to stream
+        function reconnect() {
+            if (ws) {
+                ws.close();
+            }
+            
+            document.getElementById('errorMessage').classList.add('hidden');
+            document.getElementById('loading').style.display = 'block';
+            
+            setTimeout(() => {
+                connectWebSocket();
+            }, 500);
+        }
+
+        // Toggle fullscreen
+        function toggleFullscreen() {
+            if (!isFullscreen) {
+                enterFullscreen();
+            } else {
+                exitFullscreen();
+            }
+        }
+
+        // Enter fullscreen
+        function enterFullscreen() {
+            const elem = document.documentElement;
+            
+            if (elem.requestFullscreen) {
+                elem.requestFullscreen();
+            } else if (elem.webkitRequestFullscreen) {
+                elem.webkitRequestFullscreen();
+            } else if (elem.mozRequestFullScreen) {
+                elem.mozRequestFullScreen();
+            } else if (elem.msRequestFullscreen) {
+                elem.msRequestFullscreen();
+            }
+        }
+
+        // Exit fullscreen
+        function exitFullscreen() {
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+            } else if (document.webkitExitFullscreen) {
+                document.webkitExitFullscreen();
+            } else if (document.mozCancelFullScreen) {
+                document.mozCancelFullScreen();
+            } else if (document.msExitFullscreen) {
+                document.msExitFullscreen();
+            }
+        }
+
+        // Handle fullscreen change
+        function handleFullscreenChange() {
+            isFullscreen = !!(document.fullscreenElement || 
+                              document.webkitFullscreenElement || 
+                              document.mozFullScreenElement || 
+                              document.msFullscreenElement);
+            
+            const icon = document.getElementById('fullscreenIcon');
+            if (isFullscreen) {
+                icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>';
+            } else {
+                icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/>';
+            }
+        }
+
+        // Setup auto-hide controls
+        function setupControlsAutoHide() {
+            const controls = document.getElementById('controls');
+            
+            // Show controls on mouse move
+            document.addEventListener('mousemove', () => {
+                controls.classList.remove('hidden');
+                
+                // Clear existing timeout
+                if (hideControlsTimeout) {
+                    clearTimeout(hideControlsTimeout);
+                }
+                
+                // Hide controls after 3 seconds of inactivity
+                hideControlsTimeout = setTimeout(() => {
+                    // Check if currently in fullscreen mode
+                    const isCurrentlyFullscreen = !!(document.fullscreenElement || 
+                                                      document.webkitFullscreenElement || 
+                                                      document.mozFullScreenElement || 
+                                                      document.msFullscreenElement);
+                    if (isCurrentlyFullscreen) {
+                        controls.classList.add('hidden');
+                    }
+                }, 3000);
+            });
+            
+            // Always show controls when not in fullscreen
+            document.addEventListener('fullscreenchange', handleFullscreenChange);
+            document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+            document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+            document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+        }
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            if (ws) {
+                ws.close();
+            }
+        });
+    </script>
+</body>
+</html>
