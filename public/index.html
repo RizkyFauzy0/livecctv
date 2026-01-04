@@ -7,14 +7,35 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body {
-            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #312e81 100%);
+            background-attachment: fixed;
+        }
+        .glass-card {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(148, 163, 184, 0.1);
         }
         .camera-card {
-            transition: transform 0.2s, box-shadow 0.2s;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        .camera-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(139, 92, 246, 0.1), transparent);
+            transition: left 0.5s;
+        }
+        .camera-card:hover::before {
+            left: 100%;
         }
         .camera-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 25px 50px -12px rgba(139, 92, 246, 0.25), 0 0 0 1px rgba(139, 92, 246, 0.1);
         }
         .status-badge {
             animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
@@ -25,80 +46,129 @@
         }
         .modal {
             transition: opacity 0.3s ease;
+            backdrop-filter: blur(8px);
         }
         canvas {
             width: 100%;
             height: auto;
             background: #000;
-            border-radius: 0.5rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+        }
+        .stat-card {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
+            transition: all 0.3s ease;
+        }
+        .stat-card:hover {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(139, 92, 246, 0.15) 100%);
+            transform: translateY(-2px);
+        }
+        .gradient-border {
+            position: relative;
+            background: linear-gradient(to right, #3b82f6, #8b5cf6, #ec4899);
+            padding: 1px;
+            border-radius: 0.75rem;
+        }
+        .gradient-border-inner {
+            background: #1e293b;
+            border-radius: 0.75rem;
+        }
+        @keyframes glow {
+            0%, 100% { box-shadow: 0 0 20px rgba(139, 92, 246, 0.3); }
+            50% { box-shadow: 0 0 30px rgba(139, 92, 246, 0.5); }
+        }
+        .glow-effect {
+            animation: glow 2s ease-in-out infinite;
         }
     </style>
 </head>
-<body class="min-h-screen text-gray-100">
+<body class="min-h-screen text-gray-100 relative">
+    <!-- Animated background elements -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none">
+        <div class="absolute top-20 left-10 w-72 h-72 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-pulse"></div>
+        <div class="absolute top-40 right-10 w-72 h-72 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-pulse" style="animation-delay: 1s;"></div>
+        <div class="absolute bottom-20 left-1/2 w-72 h-72 bg-pink-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-pulse" style="animation-delay: 2s;"></div>
+    </div>
+
     <!-- Header -->
-    <header class="bg-gray-900 shadow-lg border-b border-gray-800">
+    <header class="glass-card shadow-2xl border-b border-gray-700/50 sticky top-0 z-50">
         <div class="container mx-auto px-4 py-6">
             <div class="flex items-center justify-between">
-                <div class="flex items-center space-x-3">
-                    <svg class="w-10 h-10 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
-                    </svg>
+                <div class="flex items-center space-x-4">
+                    <div class="relative">
+                        <div class="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl blur-lg opacity-75"></div>
+                        <div class="relative bg-gradient-to-br from-blue-500 to-purple-600 p-3 rounded-2xl shadow-xl">
+                            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                            </svg>
+                        </div>
+                    </div>
                     <div>
-                        <h1 class="text-3xl font-bold text-white">Live CCTV</h1>
-                        <p class="text-sm text-gray-400">RTSP Streaming Management</p>
+                        <h1 class="text-3xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">Live CCTV</h1>
+                        <p class="text-sm text-gray-400 font-medium">RTSP Streaming Management</p>
                     </div>
                 </div>
-                <button onclick="openAddCameraModal()" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-lg flex items-center space-x-2 transition">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <button onclick="openAddCameraModal()" class="relative group bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold px-6 py-3 rounded-xl flex items-center space-x-2 transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105">
+                    <div class="absolute inset-0 bg-gradient-to-r from-blue-400 to-purple-400 rounded-xl blur opacity-0 group-hover:opacity-75 transition-opacity duration-300"></div>
+                    <svg class="w-5 h-5 relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                     </svg>
-                    <span>Add Camera</span>
+                    <span class="relative z-10">Add Camera</span>
                 </button>
             </div>
         </div>
     </header>
 
     <!-- Main Content -->
-    <main class="container mx-auto px-4 py-8">
+    <main class="container mx-auto px-4 py-8 relative z-10">
         <!-- Stats -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+            <div class="stat-card glass-card rounded-2xl p-6 border border-gray-700/50 shadow-xl hover:shadow-2xl">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-gray-400 text-sm mb-1">Total Cameras</p>
-                        <p class="text-3xl font-bold text-white" id="totalCameras">0</p>
+                        <p class="text-gray-400 text-sm mb-2 font-medium">Total Cameras</p>
+                        <p class="text-4xl font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent" id="totalCameras">0</p>
                     </div>
-                    <div class="bg-blue-500 bg-opacity-20 p-4 rounded-lg">
-                        <svg class="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
-                        </svg>
+                    <div class="relative">
+                        <div class="absolute inset-0 bg-blue-500 rounded-2xl blur-xl opacity-50"></div>
+                        <div class="relative bg-gradient-to-br from-blue-500 to-cyan-500 p-4 rounded-2xl shadow-lg">
+                            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                            </svg>
+                        </div>
                     </div>
                 </div>
             </div>
-            <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+            <div class="stat-card glass-card rounded-2xl p-6 border border-gray-700/50 shadow-xl hover:shadow-2xl">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-gray-400 text-sm mb-1">Live Streams</p>
-                        <p class="text-3xl font-bold text-green-500" id="liveStreams">0</p>
+                        <p class="text-gray-400 text-sm mb-2 font-medium">Live Streams</p>
+                        <p class="text-4xl font-bold bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent" id="liveStreams">0</p>
                     </div>
-                    <div class="bg-green-500 bg-opacity-20 p-4 rounded-lg">
-                        <svg class="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                        </svg>
+                    <div class="relative">
+                        <div class="absolute inset-0 bg-green-500 rounded-2xl blur-xl opacity-50"></div>
+                        <div class="relative bg-gradient-to-br from-green-500 to-emerald-500 p-4 rounded-2xl shadow-lg glow-effect">
+                            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </div>
                     </div>
                 </div>
             </div>
-            <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+            <div class="stat-card glass-card rounded-2xl p-6 border border-gray-700/50 shadow-xl hover:shadow-2xl">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-gray-400 text-sm mb-1">Offline</p>
-                        <p class="text-3xl font-bold text-gray-400" id="offlineStreams">0</p>
+                        <p class="text-gray-400 text-sm mb-2 font-medium">Offline</p>
+                        <p class="text-4xl font-bold bg-gradient-to-r from-gray-400 to-slate-400 bg-clip-text text-transparent" id="offlineStreams">0</p>
                     </div>
-                    <div class="bg-gray-500 bg-opacity-20 p-4 rounded-lg">
-                        <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                        </svg>
+                    <div class="relative">
+                        <div class="absolute inset-0 bg-gray-500 rounded-2xl blur-xl opacity-30"></div>
+                        <div class="relative bg-gradient-to-br from-gray-600 to-slate-600 p-4 rounded-2xl shadow-lg">
+                            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -114,65 +184,78 @@
             <svg class="w-24 h-24 text-gray-600 mx-auto mb-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
             </svg>
-            <h3 class="text-2xl font-semibold text-gray-400 mb-2">No Cameras Added</h3>
-            <p class="text-gray-500 mb-6">Get started by adding your first CCTV camera</p>
-            <button onclick="openAddCameraModal()" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-lg inline-flex items-center space-x-2 transition">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <h3 class="text-3xl font-bold bg-gradient-to-r from-gray-300 to-gray-500 bg-clip-text text-transparent mb-3">No Cameras Added</h3>
+            <p class="text-gray-400 mb-8 text-lg">Get started by adding your first CCTV camera</p>
+            <button onclick="openAddCameraModal()" class="relative group bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold px-8 py-4 rounded-xl inline-flex items-center space-x-2 transition-all duration-300 shadow-xl hover:shadow-2xl hover:scale-105">
+                <div class="absolute inset-0 bg-gradient-to-r from-blue-400 to-purple-400 rounded-xl blur opacity-0 group-hover:opacity-75 transition-opacity duration-300"></div>
+                <svg class="w-6 h-6 relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                 </svg>
-                <span>Add Your First Camera</span>
+                <span class="relative z-10">Add Your First Camera</span>
             </button>
         </div>
     </main>
 
     <!-- Add Camera Modal -->
-    <div id="addCameraModal" class="fixed inset-0 bg-black bg-opacity-75 hidden items-center justify-center z-50 modal">
-        <div class="bg-gray-800 rounded-lg p-8 max-w-md w-full mx-4 border border-gray-700">
+    <div id="addCameraModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-50 modal">
+        <div class="glass-card rounded-2xl p-8 max-w-md w-full mx-4 border border-gray-700/50 shadow-2xl">
             <div class="flex items-center justify-between mb-6">
-                <h2 class="text-2xl font-bold text-white">Add New Camera</h2>
-                <button onclick="closeAddCameraModal()" class="text-gray-400 hover:text-white transition">
+                <h2 class="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">Add New Camera</h2>
+                <button onclick="closeAddCameraModal()" class="text-gray-400 hover:text-white transition-colors hover:rotate-90 duration-300">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                     </svg>
                 </button>
             </div>
             <form onsubmit="addCamera(event)">
-                <div class="mb-4">
-                    <label class="block text-gray-300 text-sm font-semibold mb-2" for="cameraName">
-                        Camera Name
+                <div class="mb-5">
+                    <label class="block text-gray-200 text-sm font-bold mb-2 flex items-center space-x-2" for="cameraName">
+                        <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                        </svg>
+                        <span>Camera Name</span>
                     </label>
                     <input 
                         type="text" 
                         id="cameraName" 
                         required
                         placeholder="e.g., Front Door Camera"
-                        class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        class="w-full px-4 py-3 bg-gray-800/80 border border-gray-600 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300"
                     >
                 </div>
                 <div class="mb-6">
-                    <label class="block text-gray-300 text-sm font-semibold mb-2" for="rtspUrl">
-                        RTSP URL
+                    <label class="block text-gray-200 text-sm font-bold mb-2 flex items-center space-x-2" for="rtspUrl">
+                        <svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+                        </svg>
+                        <span>RTSP URL</span>
                     </label>
                     <input 
                         type="text" 
                         id="rtspUrl" 
                         required
                         placeholder="rtsp://username:password@ip:port/stream"
-                        class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        class="w-full px-4 py-3 bg-gray-800/80 border border-gray-600 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 font-mono text-sm"
                     >
-                    <p class="text-gray-400 text-xs mt-2">Example: rtsp://admin:admin123@192.168.1.100:554/stream1</p>
+                    <p class="text-gray-400 text-xs mt-2 flex items-start space-x-1">
+                        <svg class="w-3 h-3 mt-0.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <span>Example: rtsp://admin:admin123@192.168.1.100:554/stream1</span>
+                    </p>
                 </div>
                 <div class="flex space-x-3">
                     <button 
                         type="submit" 
-                        class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition"
+                        class="flex-1 relative group bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold py-3.5 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105"
                     >
-                        Add Camera
+                        <div class="absolute inset-0 bg-gradient-to-r from-blue-400 to-purple-400 rounded-xl blur opacity-0 group-hover:opacity-50 transition-opacity duration-300"></div>
+                        <span class="relative z-10">Add Camera</span>
                     </button>
                     <button 
                         type="button" 
                         onclick="closeAddCameraModal()"
-                        class="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-semibold py-3 rounded-lg transition"
+                        class="flex-1 bg-gray-700/80 hover:bg-gray-600 text-white font-semibold py-3.5 rounded-xl transition-all duration-300 border border-gray-600 hover:border-gray-500"
                     >
                         Cancel
                     </button>
@@ -243,41 +326,42 @@
         function createCameraCard(camera) {
             const isLive = camera.status === 'live';
             const statusBadge = isLive 
-                ? '<span class="status-badge inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-green-500 text-white"><span class="w-2 h-2 bg-white rounded-full mr-2"></span>LIVE</span>'
-                : '<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-gray-600 text-gray-300"><span class="w-2 h-2 bg-gray-400 rounded-full mr-2"></span>OFFLINE</span>';
+                ? '<span class="status-badge inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-lg"><span class="w-2 h-2 bg-white rounded-full mr-2 animate-pulse"></span>LIVE</span>'
+                : '<span class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold bg-gray-700 text-gray-300 border border-gray-600"><span class="w-2 h-2 bg-gray-500 rounded-full mr-2"></span>OFFLINE</span>';
 
             return `
-                <div class="camera-card bg-gray-800 rounded-lg overflow-hidden border border-gray-700">
-                    <div class="p-4">
+                <div class="camera-card glass-card rounded-2xl overflow-hidden border border-gray-700/50 shadow-xl">
+                    <div class="p-5">
                         <!-- Video Canvas -->
-                        <div class="relative mb-4 bg-black rounded-lg overflow-hidden aspect-video">
+                        <div class="relative mb-4 bg-gradient-to-br from-gray-900 to-black rounded-xl overflow-hidden aspect-video border border-gray-800 shadow-inner">
                             <canvas id="canvas-${camera.id}" class="w-full h-full"></canvas>
-                            ${!isLive ? '<div class="absolute inset-0 flex items-center justify-center"><svg class="w-16 h-16 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg></div>' : ''}
+                            ${!isLive ? '<div class="absolute inset-0 flex items-center justify-center backdrop-blur-sm bg-black/30"><div class="text-center"><svg class="w-16 h-16 text-gray-500 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg><p class="text-gray-500 text-sm font-medium">Stream Offline</p></div></div>' : ''}
+                            ${isLive ? '<div class="absolute top-3 right-3"><div class="px-3 py-1 bg-red-500/90 backdrop-blur-sm rounded-full flex items-center space-x-1.5 shadow-lg"><span class="w-2 h-2 bg-white rounded-full animate-pulse"></span><span class="text-white text-xs font-bold">RECORDING</span></div></div>' : ''}
                         </div>
                         
                         <!-- Camera Info -->
                         <div class="mb-4">
-                            <div class="flex items-center justify-between mb-2">
-                                <h3 class="text-lg font-bold text-white truncate">${camera.name}</h3>
+                            <div class="flex items-center justify-between mb-3">
+                                <h3 class="text-lg font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent truncate">${camera.name}</h3>
                                 ${statusBadge}
                             </div>
-                            <p class="text-sm text-gray-400 truncate mb-2" title="${camera.rtspUrl}">
+                            <p class="text-sm text-gray-400 truncate mb-3 font-mono bg-gray-800/50 px-3 py-1.5 rounded-lg border border-gray-700" title="${camera.rtspUrl}">
                                 ${camera.rtspUrl}
                             </p>
-                            <div class="flex items-center space-x-2">
-                                <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div class="flex items-center space-x-2 bg-gray-800/50 rounded-lg p-2 border border-gray-700">
+                                <svg class="w-4 h-4 text-purple-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
                                 </svg>
                                 <input 
                                     type="text" 
                                     value="${window.location.origin}${camera.streamUrl}" 
                                     readonly
-                                    class="flex-1 text-xs bg-gray-700 border border-gray-600 rounded px-2 py-1 text-gray-300"
+                                    class="flex-1 text-xs bg-transparent border-0 outline-none text-gray-300 font-mono"
                                     onclick="this.select()"
                                 >
                                 <button 
                                     onclick="copyUrl('${window.location.origin}${camera.streamUrl}')"
-                                    class="text-blue-500 hover:text-blue-400 transition"
+                                    class="text-purple-400 hover:text-purple-300 transition-all hover:scale-110 flex-shrink-0"
                                     title="Copy URL"
                                 >
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -290,15 +374,15 @@
                         <!-- Actions -->
                         <div class="flex space-x-2">
                             ${isLive 
-                                ? `<button onclick="stopStream('${camera.id}')" class="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold py-2 rounded-lg transition flex items-center justify-center space-x-1"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"/></svg><span>Stop</span></button>`
-                                : `<button onclick="startStream('${camera.id}')" class="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-2 rounded-lg transition flex items-center justify-center space-x-1"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg><span>Start</span></button>`
+                                ? `<button onclick="stopStream('${camera.id}')" class="flex-1 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white font-bold py-2.5 rounded-xl transition-all duration-300 flex items-center justify-center space-x-2 shadow-lg hover:shadow-xl hover:scale-105"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"/></svg><span>Stop</span></button>`
+                                : `<button onclick="startStream('${camera.id}')" class="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-bold py-2.5 rounded-xl transition-all duration-300 flex items-center justify-center space-x-2 shadow-lg hover:shadow-xl hover:scale-105"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg><span>Start</span></button>`
                             }
-                            <button onclick="openFullscreen('${camera.id}')" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg transition" title="Fullscreen">
+                            <button onclick="openFullscreen('${camera.id}')" class="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold px-4 py-2.5 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105" title="Fullscreen">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/>
                                 </svg>
                             </button>
-                            <button onclick="deleteCamera('${camera.id}')" class="bg-gray-700 hover:bg-gray-600 text-white font-semibold px-4 py-2 rounded-lg transition" title="Delete">
+                            <button onclick="deleteCamera('${camera.id}')" class="bg-gradient-to-r from-gray-700 to-gray-800 hover:from-red-600 hover:to-red-700 text-white font-semibold px-4 py-2.5 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105" title="Delete">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                                 </svg>
